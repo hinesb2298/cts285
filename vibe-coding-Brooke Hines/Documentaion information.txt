@@ -1,0 +1,26 @@
+Attempt1
+
+Created a basic dice game using AI while give only bacic prompts.
+
+In the follwoing attempts I told AI exaclty what I wanted it to create in detail. 
+
+Attempt2
+
+added code that would tell the user how the game work and how to play.
+
+Attempt3
+
+added coded that would give the user positive affirmations and added graphic details to enhance the overall look of the game.
+ Attempt4
+
+coded in a reset button that would allow the player to rest the game at anytime, in addition to a confirmation pop-up just in case the user accidentally pressed the reset button.
+
+I made this program mone by changing the color to a dark mode theme
+and making it two player game. to detemine the winner, is the first to 5.
+User is able to change player mode during the game.
+user is able to choose one or two players.
+
+Attempt 5
+Allow AI to make changed to the visual and enhanced the player vs computer, so that when it the computers turn 
+the dice will automatically roll.
+changed the code that it is not a back and forth instead of one player rolling until they win.

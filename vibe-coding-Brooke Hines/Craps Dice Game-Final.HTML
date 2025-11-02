@@ -1,0 +1,432 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Craps Dice Game</title>
+<style>
+    body {
+        font-family: 'Poppins', sans-serif;
+        background-color: #121212;
+        color: #ffffff;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: flex-start;
+        height: 100vh;
+        margin: 0;
+        padding: 20px;
+        text-align: center;
+    }
+
+    h1 {
+        margin-top: 10px;
+        font-size: 2.3em;
+        text-shadow: 1px 1px 5px rgba(255,255,255,0.2);
+    }
+
+    .dice-container {
+        display: flex;
+        justify-content: center;
+        margin: 25px;
+        gap: 20px;
+    }
+
+    .die {
+        width: 90px;
+        height: 90px;
+        background: #1e1e1e;
+        color: #fff;
+        border-radius: 15px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 3.5em;
+        box-shadow: 0 5px 10px rgba(0,0,0,0.5);
+        transition: transform 0.3s, box-shadow 0.3s;
+    }
+
+    .die.animate {
+        transform: rotate(360deg);
+    }
+
+    .buttons {
+        display: flex;
+        gap: 10px;
+        justify-content: center;
+        flex-wrap: wrap;
+    }
+
+    button {
+        padding: 12px 25px;
+        font-size: 1.1em;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        background-color: #FF4081;
+        color: white;
+        transition: background 0.3s, transform 0.1s;
+    }
+
+    button:hover {
+        background-color: #E73370;
+        transform: scale(1.05);
+    }
+
+    #resetButton {
+        background-color: #4CAF50;
+    }
+
+    #resetButton:hover {
+        background-color: #388E3C;
+    }
+
+    .message {
+        font-size: 1.4em;
+        margin: 20px;
+    }
+
+    .affirmation {
+        font-size: 1.2em;
+        margin-top: 10px;
+        font-style: italic;
+        color: #FFD700;
+    }
+
+    .scoreboard {
+        margin-top: 10px;
+        font-size: 1.1em;
+        background: rgba(255,255,255,0.1);
+        padding: 10px 20px;
+        border-radius: 10px;
+    }
+
+    details {
+        background: rgba(255,255,255,0.1);
+        padding: 10px 20px;
+        border-radius: 10px;
+        margin-top: 20px;
+        max-width: 550px;
+    }
+
+    summary {
+        cursor: pointer;
+        font-weight: bold;
+        font-size: 1.1em;
+    }
+
+    #victoryPage {
+        position: fixed;
+        top:0; left:0; right:0; bottom:0;
+        background: #000000ee;
+        color: #fff;
+        display: none;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        font-size: 2em;
+        z-index: 999;
+    }
+
+    #victoryPage button {
+        margin-top: 20px;
+        font-size: 1.2em;
+    }
+
+    canvas {
+        position: fixed;
+        top:0; left:0;
+        width:100%;
+        height:100%;
+        pointer-events: none;
+    }
+</style>
+</head>
+<body>
+
+<h1>🎲 Craps Dice Game 🎲</h1>
+
+<div>
+    <label for="playerMode">Choose Player Mode:</label>
+    <select id="playerMode">
+        <option value="1">1 Player vs Computer</option>
+        <option value="2">2 Players</option>
+    </select>
+</div>
+
+<div class="dice-container">
+    <div id="die1" class="die">🎲</div>
+    <div id="die2" class="die">🎲</div>
+</div>
+
+<div class="buttons">
+    <button id="rollButton">🎯 Roll Dice</button>
+    <button id="resetButton">🔄 Reset Game</button>
+</div>
+
+<div class="message" id="message">Press "Roll Dice" to start!</div>
+<div class="affirmation" id="affirmation"></div>
+<div class="message" id="turnDisplay">Player 1's turn</div>
+
+<div class="scoreboard">
+    Player 1 Wins: <span id="wins1">0</span> | Player 1 Losses: <span id="losses1">0</span><br>
+    Player 2/Computer Wins: <span id="wins2">0</span> | Player 2/Computer Losses: <span id="losses2">0</span>
+</div>
+
+<details>
+  <summary>📜 Game Rules</summary>
+  <p><strong>Objective:</strong> Roll two dice and try to win by rolling certain combinations.</p>
+
+  <p><strong>Come-Out Roll (First Roll):</strong></p>
+  <ul>
+    <li>🎉 Roll a <strong>7</strong> or <strong>11</strong> → Win instantly!</li>
+    <li>💀 Roll a <strong>2</strong>, <strong>3</strong>, or <strong>12</strong> → Lose instantly.</li>
+    <li>Otherwise, that number becomes your <strong>point</strong>.</li>
+  </ul>
+
+  <p><strong>Point Phase:</strong></p>
+  <ul>
+    <li>🎯 Roll your <strong>point</strong> again → Win!</li>
+    <li>😢 Roll a <strong>7</strong> before your point → Lose!</li>
+  </ul>
+
+  <p>🏆 First player to reach <strong>3 wins</strong> is the champion!</p>
+</details>
+
+<div id="victoryPage">
+    <div id="victoryMessage"></div>
+    <button onclick="playAgain()">🎮 Play Again</button>
+    <canvas id="confetti"></canvas>
+</div>
+
+<script>
+const diceFaces = ["⚀", "⚁", "⚂", "⚃", "⚄", "⚅"];
+let point = null;
+let playerMode = 1;
+let currentPlayer = 0; // 0 = Player1, 1 = Player2/Computer
+let wins = [0, 0];
+let losses = [0, 0];
+
+const affirmationsWin = ["You’re unstoppable! 💪","You’re on fire! 🔥","You make winning look easy! 🌟","Luck loves you today! 🍀","Victory suits you! 🏆"];
+const affirmationsLose = ["Every loss is just a setup for your next win. 💫","Shake it off — champions don’t quit! 💪","You’re learning faster than the dice can roll! 🎲","Even luck needs a warm-up. Try again! 🔄","Don’t worry — you’ve got this! 🌈"];
+const affirmationsNeutral = ["Keep the energy rolling! 🎯","Focus and flow — you’ve got this! ✨","Good vibes bring good rolls! 🍀","Patience makes the payoff sweeter! 🕒","You’re right on track — keep going! 🚀"];
+
+function rollDie(){ return Math.floor(Math.random() * 6); }
+
+function updateDiceDisplay(d1,d2){
+    const die1=document.getElementById('die1');
+    const die2=document.getElementById('die2');
+    die1.textContent=diceFaces[d1];
+    die2.textContent=diceFaces[d2];
+    die1.classList.add('animate');
+    die2.classList.add('animate');
+    setTimeout(()=>{die1.classList.remove('animate'); die2.classList.remove('animate');},400);
+}
+
+function updateScoreboard(){
+    document.getElementById('wins1').textContent=wins[0];
+    document.getElementById('wins2').textContent=wins[1];
+    document.getElementById('losses1').textContent=losses[0];
+    document.getElementById('losses2').textContent=losses[1];
+}
+
+function randomAffirmation(type){
+    const list = type==='win'?affirmationsWin:type==='lose'?affirmationsLose:affirmationsNeutral;
+    return list[Math.floor(Math.random()*list.length)];
+}
+
+function resetGame(){
+    point=null; wins=[0,0]; losses=[0,0]; currentPlayer=0;
+    document.getElementById('message').textContent='Game has been reset! 🎮 Ready to roll again?';
+    document.getElementById('affirmation').textContent='Fresh start, fresh luck! 🍀';
+    document.getElementById('turnDisplay').textContent="Player 1's turn";
+    updateScoreboard();
+    updateDiceDisplay(0,0);
+    document.getElementById('rollButton').disabled = false;
+}
+
+function showVictory(player){
+    document.getElementById('victoryPage').style.display='flex';
+    document.getElementById('victoryMessage').textContent=`Player ${player+1} Wins! 🏆`;
+    startConfetti();
+}
+
+function playAgain(){
+    document.getElementById('victoryPage').style.display='none';
+    stopConfetti();
+    resetGame();
+}
+
+document.getElementById('playerMode').addEventListener('change', e=>{
+    playerMode=parseInt(e.target.value);
+    resetGame();
+});
+
+// --- Flashing functions ---
+function flashScreen(color){
+    const flash = document.createElement('div');
+    flash.style.position = 'fixed';
+    flash.style.top = 0;
+    flash.style.left = 0;
+    flash.style.width = '100%';
+    flash.style.height = '100%';
+    flash.style.backgroundColor = color;
+    flash.style.opacity = 0.7;
+    flash.style.zIndex = 9999;
+    flash.style.pointerEvents = 'none';
+    document.body.appendChild(flash);
+    let flashes = 0;
+    const interval = setInterval(() => {
+        flash.style.opacity = flash.style.opacity == 0.7 ? 0 : 0.7;
+        flashes++;
+        if(flashes > 5){ clearInterval(interval); document.body.removeChild(flash); }
+    }, 100);
+}
+
+function flashDice(color){
+    const die1=document.getElementById('die1');
+    const die2=document.getElementById('die2');
+    let flashes = 0;
+    const interval = setInterval(()=>{
+        die1.style.backgroundColor=die1.style.backgroundColor==color?'#1e1e1e':color;
+        die2.style.backgroundColor=die2.style.backgroundColor==color?'#1e1e1e':color;
+        flashes++;
+        if(flashes>5){ clearInterval(interval); die1.style.backgroundColor='#1e1e1e'; die2.style.backgroundColor='#1e1e1e'; }
+    },100);
+}
+
+function highlightTurn(){
+    document.body.style.backgroundColor = currentPlayer===0?'#121212':'#1a1a2e';
+}
+
+// --- Main roll function ---
+function rollTurn(){
+    let d1=rollDie();
+    let d2=rollDie();
+    let sum=d1+d2+2; // 0-5 faces
+    updateDiceDisplay(d1,d2);
+
+    let message='', affirmation='';
+    let wonTurn=false, lostTurn=false;
+
+    if(point===null){
+        if(sum===7||sum===11){
+            message=`Player ${currentPlayer+1} rolled ${sum}. 🎉 Win!`;
+            affirmation=randomAffirmation('win');
+            wins[currentPlayer]++;
+            point=null;
+            wonTurn=true;
+            flashScreen('green'); flashDice('green');
+        } else if(sum===2||sum===3||sum===12){
+            message=`Player ${currentPlayer+1} rolled ${sum}. 💀 Lose!`;
+            affirmation=randomAffirmation('lose');
+            losses[currentPlayer]++;
+            point=null;
+            lostTurn=true;
+            flashScreen('red'); flashDice('red');
+        } else{
+            point=sum;
+            message=`Point is now ${point}. Keep rolling! 🎯`;
+            affirmation=randomAffirmation('neutral');
+        }
+    } else{
+        if(sum===point){
+            message=`Player ${currentPlayer+1} hit the point ${point}! 🎉 Win!`;
+            affirmation=randomAffirmation('win');
+            wins[currentPlayer]++;
+            point=null;
+            wonTurn=true;
+            flashScreen('green'); flashDice('green');
+        } else if(sum===7){
+            message=`Player ${currentPlayer+1} rolled 7 before hitting point ${point}. 💀 Lose!`;
+            affirmation=randomAffirmation('lose');
+            losses[currentPlayer]++;
+            point=null;
+            lostTurn=true;
+            flashScreen('red'); flashDice('red');
+        } else{
+            message=`Player ${currentPlayer+1} rolled ${sum}. Keep going! 🎲`;
+            affirmation=randomAffirmation('neutral');
+        }
+    }
+
+    document.getElementById('message').textContent=message;
+    document.getElementById('affirmation').textContent=affirmation;
+    updateScoreboard();
+
+    if(wins[currentPlayer]>=3){
+        showVictory(currentPlayer);
+        return;
+    }
+
+    // --- Turn switching ---
+    if(playerMode===2){
+        if(wonTurn||lostTurn){
+            currentPlayer=(currentPlayer+1)%2;
+            document.getElementById('turnDisplay').textContent=`Player ${currentPlayer+1}'s turn`;
+            highlightTurn();
+        } else{
+            document.getElementById('turnDisplay').textContent=`Player ${currentPlayer+1}'s turn`;
+            highlightTurn();
+        }
+    } else{
+        currentPlayer=currentPlayer===0?1:0;
+        if(currentPlayer===0){
+            document.getElementById('turnDisplay').textContent="Your turn";
+            document.getElementById('rollButton').disabled=false;
+        } else{
+            document.getElementById('turnDisplay').textContent="Computer's turn";
+            document.getElementById('rollButton').disabled=true;
+            setTimeout(rollTurn, 1000);
+        }
+        highlightTurn();
+    }
+}
+
+document.getElementById('rollButton').addEventListener('click', rollTurn);
+document.getElementById('resetButton').addEventListener('click', resetGame);
+
+// --- Confetti ---
+let confettiInterval;
+function startConfetti(){
+    const canvas=document.getElementById('confetti');
+    const ctx=canvas.getContext('2d');
+    canvas.width=window.innerWidth;
+    canvas.height=window.innerHeight;
+    let pieces=[];
+    for(let i=0;i<150;i++){
+        pieces.push({
+            x: Math.random()*canvas.width,
+            y: Math.random()*canvas.height,
+            r: Math.random()*6+2,
+            d: Math.random()*100,
+            color: `hsl(${Math.random()*360},100%,50%)`,
+            tilt: Math.random()*10-10
+        });
+    }
+    confettiInterval=setInterval(()=>{
+        ctx.clearRect(0,0,canvas.width,canvas.height);
+        pieces.forEach(p=>{
+            ctx.beginPath();
+            ctx.lineWidth=p.r;
+            ctx.strokeStyle=p.color;
+            ctx.moveTo(p.x+p.tilt,p.y);
+            ctx.lineTo(p.x+p.tilt,p.y+p.r);
+            ctx.stroke();
+            p.y+=Math.cos(p.d)+1+p.r/2;
+            p.x+=Math.sin(p.d);
+            if(p.y>canvas.height){ p.y=0; p.x=Math.random()*canvas.width; }
+        });
+    },20);
+}
+function stopConfetti(){ clearInterval(confettiInterval); }
+</script>
+
+</body>
+</html>
+
+
+
+
+
